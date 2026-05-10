@@ -128,7 +128,7 @@
     </inertial>
   </link>
 
-  <!-- link4 along +X (colinear with link3); joint4 rotates about forearm axis (+X) -->
+  <!-- link4 along +Y (perpendicular to link3 +X); joint4 rolls about link3 boom (+X) -->
   <joint name="left_joint4" type="revolute">
     <parent link="left_link3"/>
     <child link="left_link4"/>
@@ -138,7 +138,7 @@
   </joint>
   <link name="left_link4">
     <visual>
-      <origin xyz="0.06 0 0" rpy="0 1.57079632679 0"/>
+      <origin xyz="0 0.0 0" rpy="-1.57079632679 0 0"/>
       <geometry>
         <cylinder length="0.12" radius="0.03"/>
       </geometry>
@@ -147,7 +147,7 @@
       </material>
     </visual>
     <collision>
-      <origin xyz="0.06 0 0" rpy="0 1.57079632679 0"/>
+      <origin xyz="0 0.0 0" rpy="-1.57079632679 0 0"/>
       <geometry>
         <cylinder length="0.12" radius="0.03"/>
       </geometry>
@@ -166,11 +166,11 @@
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
   </link>
-  <!-- Thruster frame: origin at distal end of link4; +X along link4 / forearm -->
+  <!-- Thruster +X = link4 +X: lies in distal end face of link4 (XZ plane, normal +Y) -->
   <joint name="left_ee_fixed" type="fixed">
     <parent link="left_link4"/>
     <child link="left_ee_thruster"/>
-    <origin xyz="0.12 0 0" rpy="0 0 0"/>
+    <origin xyz="0 0.06 0" rpy="0 0 0"/>
   </joint>
 
   <!-- ========== Right arm ========== -->
@@ -266,7 +266,7 @@
     </inertial>
   </link>
 
-  <!-- link4 along +X (colinear with link3); joint4 rotates about forearm axis (+X) -->
+  <!-- link4 along +Y (perpendicular to link3 +X); joint4 rolls about link3 boom (+X) -->
   <joint name="right_joint4" type="revolute">
     <parent link="right_link3"/>
     <child link="right_link4"/>
@@ -276,7 +276,7 @@
   </joint>
   <link name="right_link4">
     <visual>
-      <origin xyz="0.06 0 0" rpy="0 1.57079632679 0"/>
+      <origin xyz="0 0.0 0" rpy="-1.57079632679 0 0"/>
       <geometry>
         <cylinder length="0.12" radius="0.03"/>
       </geometry>
@@ -285,7 +285,7 @@
       </material>
     </visual>
     <collision>
-      <origin xyz="0.06 0 0" rpy="0 1.57079632679 0"/>
+      <origin xyz="0 0.0 0" rpy="-1.57079632679 0 0"/>
       <geometry>
         <cylinder length="0.12" radius="0.03"/>
       </geometry>
@@ -304,10 +304,10 @@
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
   </link>
-  <!-- Thruster frame: origin at distal end of link4; +X along link4 / forearm -->
+  <!-- Thruster +X in plane of link4 distal cap (see left_ee_fixed comment) -->
   <joint name="right_ee_fixed" type="fixed">
     <parent link="right_link4"/>
     <child link="right_ee_thruster"/>
-    <origin xyz="0.12 0 0" rpy="0 0 0"/>
+    <origin xyz="0 0.06 0" rpy="0 0 0"/>
   </joint>
 </robot>
