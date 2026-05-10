@@ -36,6 +36,7 @@
   </joint>
 
   <!-- ========== Left arm ========== -->
+  <!-- Shoulder: link1 along base +Y (radial); revolute axis is link1 +Y = radial outward -->
   <joint name="left_joint1" type="revolute">
     <parent link="base_link"/>
     <child link="left_link1"/>
@@ -45,7 +46,7 @@
   </joint>
   <link name="left_link1">
     <visual>
-      <origin xyz="0.075 0 0" rpy="0 1.57079632679 0"/>
+      <origin xyz="0 0.075 0" rpy="-1.57079632679 0 0"/>
       <geometry>
         <cylinder length="0.15" radius="0.03"/>
       </geometry>
@@ -54,7 +55,7 @@
       </material>
     </visual>
     <collision>
-      <origin xyz="0.075 0 0" rpy="0 1.57079632679 0"/>
+      <origin xyz="0 0.075 0" rpy="-1.57079632679 0 0"/>
       <geometry>
         <cylinder length="0.15" radius="0.03"/>
       </geometry>
@@ -69,8 +70,8 @@
   <joint name="left_joint2" type="revolute">
     <parent link="left_link1"/>
     <child link="left_link2"/>
-    <origin xyz="0.15 0 0" rpy="0 0 0"/>
-    <axis xyz="0 1 0"/>
+    <origin xyz="0 0.15 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
     <limit lower="-3.14" upper="3.14" effort="0" velocity="10"/>
   </joint>
   <link name="left_link2">
@@ -170,6 +171,7 @@
   </joint>
 
   <!-- ========== Right arm ========== -->
+  <!-- π yaw: link1 +Y aligns with base -Y (radial outward at -Y rim); same revolute axis -->
   <joint name="right_joint1" type="revolute">
     <parent link="base_link"/>
     <child link="right_link1"/>
@@ -179,7 +181,7 @@
   </joint>
   <link name="right_link1">
     <visual>
-      <origin xyz="0.075 0 0" rpy="0 1.57079632679 0"/>
+      <origin xyz="0 0.075 0" rpy="-1.57079632679 0 0"/>
       <geometry>
         <cylinder length="0.15" radius="0.03"/>
       </geometry>
@@ -188,7 +190,7 @@
       </material>
     </visual>
     <collision>
-      <origin xyz="0.075 0 0" rpy="0 1.57079632679 0"/>
+      <origin xyz="0 0.075 0" rpy="-1.57079632679 0 0"/>
       <geometry>
         <cylinder length="0.15" radius="0.03"/>
       </geometry>
@@ -203,8 +205,8 @@
   <joint name="right_joint2" type="revolute">
     <parent link="right_link1"/>
     <child link="right_link2"/>
-    <origin xyz="0.15 0 0" rpy="0 0 0"/>
-    <axis xyz="0 1 0"/>
+    <origin xyz="0 0.15 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
     <limit lower="-3.14" upper="3.14" effort="0" velocity="10"/>
   </joint>
   <link name="right_link2">
