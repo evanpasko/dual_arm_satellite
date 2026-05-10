@@ -9,7 +9,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="0.06" radius="0.35"/>
+        <cylinder length="0.25" radius="0.35"/>
       </geometry>
       <material name="bus_material">
         <color rgba="0.2 0.45 0.75 1"/>
@@ -18,7 +18,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="0.06" radius="0.35"/>
+        <cylinder length="0.25" radius="0.35"/>
       </geometry>
     </collision>
     <inertial>
@@ -40,8 +40,8 @@
     <parent link="base_link"/>
     <child link="left_link1"/>
     <origin xyz="0 0.35 0" rpy="0 0 0"/>
-    <axis xyz="0 0 1"/>
-    <limit lower="-3.14" upper="3.14" effort="0" velocity="10"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57079632679" upper="1.57079632679" effort="0" velocity="10"/>
   </joint>
   <link name="left_link1">
     <visual>
@@ -174,8 +174,8 @@
     <parent link="base_link"/>
     <child link="right_link1"/>
     <origin xyz="0 -0.35 0" rpy="0 0 3.14159265359"/>
-    <axis xyz="0 0 1"/>
-    <limit lower="-3.14" upper="3.14" effort="0" velocity="10"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57079632679" upper="1.57079632679" effort="0" velocity="10"/>
   </joint>
   <link name="right_link1">
     <visual>
