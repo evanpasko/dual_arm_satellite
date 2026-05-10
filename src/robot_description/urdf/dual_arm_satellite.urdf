@@ -1,8 +1,11 @@
 <?xml version="1.0"?>
 <robot name="dual_arm_satellite">
   <!-- Disk bus + two 4-DoF serial arms (cylinder links, zero arm link mass for massless-arm assumption). -->
+  <!-- Root: world -> base_link (fixed identity) for RViz / robot_state_publisher. -->
 
-  <link name="satellite_bus">
+  <link name="world"/>
+
+  <link name="base_link">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
@@ -26,16 +29,15 @@
     </inertial>
   </link>
 
-  <link name="world"/>
-  <joint name="world_to_bus" type="fixed">
+  <joint name="world_to_base_link" type="fixed">
     <parent link="world"/>
-    <child link="satellite_bus"/>
+    <child link="base_link"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
   <!-- ========== Left arm ========== -->
   <joint name="left_joint1" type="revolute">
-    <parent link="satellite_bus"/>
+    <parent link="base_link"/>
     <child link="left_link1"/>
     <origin xyz="0 0.35 0" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
@@ -169,7 +171,7 @@
 
   <!-- ========== Right arm ========== -->
   <joint name="right_joint1" type="revolute">
-    <parent link="satellite_bus"/>
+    <parent link="base_link"/>
     <child link="right_link1"/>
     <origin xyz="0 -0.35 0" rpy="0 0 3.14159265359"/>
     <axis xyz="0 0 1"/>
