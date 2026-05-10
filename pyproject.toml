@@ -15,6 +15,7 @@ dependencies = [
 [project.scripts]
 dual-arm-satellite = "dual_arm_satellite:main"
 dual-arm-satellite-sim = "dual_arm_satellite.physics_demo:main"
+dual-arm-satellite-teleop = "dual_arm_satellite.teleop_live:main"
 
 [build-system]
 requires = ["hatchling"]
