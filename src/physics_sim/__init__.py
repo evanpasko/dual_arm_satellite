@@ -16,6 +16,7 @@ from physics_sim.models import (
     RobotArmDefinition,
     SatelliteBodyParams,
 )
+from physics_sim.integrator import integrate_pose_constant_accel
 from physics_sim.plotting import plot_base_link_pose, plot_pose_log
 from physics_sim.urdf_loading import default_urdf_path, parse_robot_urdf
 
@@ -34,6 +35,7 @@ __all__ = [
     "make_initial_joint_positions",
     "normalize_quaternion_xyzw",
     "parse_robot_urdf",
+    "integrate_pose_constant_accel",
     "plot_base_link_pose",
     "plot_pose_log",
 ]
