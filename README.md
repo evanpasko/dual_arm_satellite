@@ -26,6 +26,44 @@ Per the problem description (pdf in base directory) the satellite is in 0 gravit
 
 Also assume no nearby small bodies that could induce microgravity
 
+## Teleop simulation
+
+Interactive teleop with **two live matplotlib windows** in parallel: (1) `base_link` position (m) and quaternion (xyzw) vs time, and (2) a **3D base_link-frame** view with **RGB XYZ axes** at the base origin, **line segments along each arm** through link 4 (frame origins after joints 1–4), both thruster origins, and their **+Y thrust** directions (updated every animation frame as joints move).
+
+**Where keys are read**
+
+- **macOS / Linux, normal terminal:** stdin is switched to **raw mode** while the program runs. Type in **this same terminal**; keys are **not** fed to the shell line editor—they update the sim. Close the plot window to quit and restore the terminal.
+- **Windows:** keys are read from the **console** via a background thread (type in the terminal window).
+- **Non-TTY stdin** (e.g. piped input): keys must be sent to the **matplotlib figure** (click the plot so it has focus).
+
+```bash
+uv sync
+uv run dual-arm-satellite-teleop
+```
+
+### Default key bindings
+
+| Keys | Action |
+|------|--------|
+| `q` `w` `e` `r` `t` `y` `u` `i` | Positive increment on joints 1–8 (rad; default step ≈ 2°, see `--joint-step`) |
+| `a` `s` `d` `f` `g` `h` `j` `k` | Negative increment on joints 1–8 |
+| `[` | Single left-thruster impulse (this timestep window; see `--dt`) |
+| `]` | Single right-thruster impulse |
+| `0` | Reset simulation (pose, joints, velocity, plot history) |
+| Close the figure | Quit |
+
+Joints are **clamped** to URDF limits. Thruster impulse magnitude is `throttle × max_thrust × dt`; use `--thruster-throttle` for 0–1 scaling.
+
+Useful flags: `--joint-step`, `--dt`, `--interval-ms`, `--left-max-thrust-n`, `--right-max-thrust-n`, `--max-plot-points` (rolling buffer), `--thruster-arrow-m` (thrust arrow length in the 3D view, meters), `--base-axes-m` (length of the red/green/blue +x/+y/+z segments from the base origin).
+
+After you close the plot window, save the recorded pose time series to a file:
+
+```bash
+uv run dual-arm-satellite-teleop --save teleop_pose.png
+```
+
+
+
 ## Developer testing
 
 Tests live under `tests/` and use [pytest](https://pytest.org/). The project configures `pythonpath = ["src"]` in `pyproject.toml` so imports such as `physics_sim` resolve without installing the package first.
@@ -70,41 +108,3 @@ uv run dual-arm-satellite-sim --vx 1.0 --wy 1.0 --duration 1.0 --dt 0.05
 ```
 
 Use `--save pose.png` to write the figure without opening a window.
-
-## Teleop simulation
-
-Interactive teleop with **two live matplotlib windows** in parallel: (1) `base_link` position (m) and quaternion (xyzw) vs time, and (2) a **3D base_link-frame** view with **RGB XYZ axes** at the base origin, **line segments along each arm** through link 4 (frame origins after joints 1–4), both thruster origins, and their **+Y thrust** directions (updated every animation frame as joints move).
-
-**Where keys are read**
-
-- **macOS / Linux, normal terminal:** stdin is switched to **raw mode** while the program runs. Type in **this same terminal**; keys are **not** fed to the shell line editor—they update the sim. Close the plot window to quit and restore the terminal.
-- **Windows:** keys are read from the **console** via a background thread (type in the terminal window).
-- **Non-TTY stdin** (e.g. piped input): keys must be sent to the **matplotlib figure** (click the plot so it has focus).
-
-```bash
-uv sync
-uv run dual-arm-satellite-teleop
-```
-
-### Default key bindings
-
-| Keys | Action |
-|------|--------|
-| `q` `w` `e` `r` `t` `y` `u` `i` | Positive increment on joints 1–8 (rad; default step ≈ 2°, see `--joint-step`) |
-| `a` `s` `d` `f` `g` `h` `j` `k` | Negative increment on joints 1–8 |
-| `[` | Single left-thruster impulse (this timestep window; see `--dt`) |
-| `]` | Single right-thruster impulse |
-| `0` | Reset simulation (pose, joints, velocity, plot history) |
-| Close the figure | Quit |
-
-Joints are **clamped** to URDF limits. Thruster impulse magnitude is `throttle × max_thrust × dt`; use `--thruster-throttle` for 0–1 scaling.
-
-Useful flags: `--joint-step`, `--dt`, `--interval-ms`, `--left-max-thrust-n`, `--right-max-thrust-n`, `--max-plot-points` (rolling buffer), `--thruster-arrow-m` (thrust arrow length in the 3D view, meters), `--base-axes-m` (length of the red/green/blue +x/+y/+z segments from the base origin).
-
-After you close the plot window, save the recorded pose time series to a file:
-
-```bash
-uv run dual-arm-satellite-teleop --save teleop_pose.png
-```
-
-
