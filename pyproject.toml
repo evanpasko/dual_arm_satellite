@@ -1,0 +1,17 @@
+[project]
+name = "dual-arm-satellite"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { email = "etpasko@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+dual-arm-satellite = "dual_arm_satellite:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
