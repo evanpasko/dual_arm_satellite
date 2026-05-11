@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from physics_sim import PhysicsSimEngine
-from physics_sim.fk_chain import arm_link_frame_origins_base_m
+from robot_description.fk import arm_link_frame_origins_base_m
 from physics_sim.thrusters_3d import thruster_origin_and_thrust_axis_base
 
 

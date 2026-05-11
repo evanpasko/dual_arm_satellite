@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
 
-from physics_sim.fk_chain import (
+from robot_description.fk import (
     T_base_thruster,
     arm_joint_slice,
     arm_link_frame_origins_base_m,

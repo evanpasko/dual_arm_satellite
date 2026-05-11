@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from physics_sim import PhysicsSimEngine, Thruster
-from physics_sim.fk_chain import compute_thrust_axis_world
+from robot_description.fk import compute_thrust_axis_world
 
 
 def test_thrust_axis_unit_and_matches_fk_helper() -> None:

@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, List, Literal, Mapping, Optional, Tuple, cast
 
-from physics_sim.models import (
+from robot_description.models import (
     ArmLinkCylinderParams,
     FixedJointParams,
     Inertia,
@@ -214,5 +214,5 @@ def parse_robot_urdf(urdf_path: Path | str) -> ParsedRobotDescription:
 
 
 def default_urdf_path() -> Path:
-    """Path to ``dual_arm_satellite.urdf`` next to the ``robot_description`` tree in ``src``."""
-    return Path(__file__).resolve().parent.parent / "robot_description" / "urdf" / "dual_arm_satellite.urdf"
+    """Path to the canonical ``dual_arm_satellite.urdf`` shipped with this package."""
+    return Path(__file__).resolve().parent / "urdf" / "dual_arm_satellite.urdf"
