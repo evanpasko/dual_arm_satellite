@@ -7,7 +7,11 @@ from typing import TYPE_CHECKING, Literal, Optional
 
 import numpy as np
 
-from physics_sim.fk_chain import arm_joint_slice, compute_thrust_axis_world
+from physics_sim.fk_chain import (
+    arm_joint_slice,
+    compute_thrust_axis_world,
+    thruster_application_point_world_m,
+)
 
 if TYPE_CHECKING:
     from physics_sim.engine import PhysicsSimEngine
@@ -16,11 +20,13 @@ if TYPE_CHECKING:
 @dataclass
 class Thruster:
     """
-    Instantaneous reactionless thruster aligned with **+Y** of the URDF thruster link.
+    Instantaneous thruster aligned with **+Y** of the URDF thruster link.
 
     When :meth:`fire` is called, a linear impulse ``J = throttle * max_thrust_n * impulse_window_s``
-    (N·s) is applied at the satellite **center of mass** in the computed world direction
-    (massless-arm / no moment from lever arm in this model).
+    (N·s) is applied along the thrust line through the **thruster frame origin** (URDF FK).
+    The engine updates **linear** momentum at the CoM (``Δv = J / m``) and **angular**
+    momentum about the CoM via ``Δω = I^{-1} (r_b × J_b)`` with lever arm ``r`` from CoM
+    to the application point (``base_link`` inertial origin is the CoM in the URDF).
 
     Parameters
     ----------
@@ -75,5 +81,8 @@ class Thruster:
         J_mag = t * self.max_thrust_n * dt
         direction = self.thrust_direction_world(engine)
         J_world = J_mag * direction
-        engine.apply_linear_impulse_world(J_world)
+        arm = engine.left_arm if self.side == "left" else engine.right_arm
+        q = arm_joint_slice(engine.joint_positions_rad, self.side)
+        p_app = thruster_application_point_world_m(engine.base_pose, arm, q)
+        engine.apply_impulse_world(J_world, application_point_world_m=p_app)
         return J_world

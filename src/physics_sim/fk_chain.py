@@ -74,6 +74,11 @@ def _quat_xyzw_to_R(q: np.ndarray) -> np.ndarray:
     )
 
 
+def rotation_body_to_world_from_quat_xyzw(q_xyzw: np.ndarray) -> np.ndarray:
+    """Public alias: rotation matrix **R** with ``v_world = R @ v_body``."""
+    return _quat_xyzw_to_R(q_xyzw)
+
+
 def T_world_base(pose: BaseLinkPose) -> np.ndarray:
     """World ← base_link: ``p_world = T @ p_base`` (homogeneous 4×4)."""
     T = np.eye(4, dtype=float)
@@ -92,11 +97,36 @@ def T_base_thruster(arm: RobotArmDefinition, joint_positions_rad: np.ndarray) ->
     return T
 
 
+def arm_link_frame_origins_base_m(
+    arm: RobotArmDefinition, joint_positions_rad: np.ndarray
+) -> np.ndarray:
+    """
+    ``base_link``-frame positions of the kinematic chain through **link4**.
+
+    Returns shape ``(5, 3)``: row 0 is the base origin, rows 1–4 are the child link frame
+    origins after joints 1–4 (URDF cumulative transforms).
+    """
+    q = np.asarray(joint_positions_rad, dtype=float).reshape(4)
+    pts: list[np.ndarray] = [np.zeros(3, dtype=float)]
+    T = np.eye(4, dtype=float)
+    for j, qi in zip(arm.joints, q):
+        T = T @ _revolute_transform(j, float(qi))
+        pts.append(T[:3, 3].copy())
+    return np.stack(pts, axis=0)
+
+
 def T_world_thruster(
     pose: BaseLinkPose, arm: RobotArmDefinition, joint_positions_rad: np.ndarray
 ) -> np.ndarray:
     """World ← thruster: ``p_world = T @ p_thruster``."""
     return T_world_base(pose) @ T_base_thruster(arm, joint_positions_rad)
+
+
+def thruster_application_point_world_m(
+    pose: BaseLinkPose, arm: RobotArmDefinition, joint_positions_rad: np.ndarray
+) -> np.ndarray:
+    """Origin of the thruster frame in world coordinates (m)."""
+    return T_world_thruster(pose, arm, joint_positions_rad)[:3, 3].copy()
 
 
 def compute_thrust_axis_world(

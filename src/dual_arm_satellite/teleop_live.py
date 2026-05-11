@@ -1,5 +1,7 @@
 """
-CLI teleop: terminal keyboard (raw mode, no echo) + live ``base_link`` pose plot.
+CLI teleop: terminal keyboard (raw mode, no echo) + two live figures: ``base_link`` pose vs
+time, and a 3D ``base_link``-frame view with base XYZ axes, arm link skeletons, thruster
+positions, and thrust directions.
 
 On POSIX TTYs, keys are read from stdin in raw mode so they control the sim instead of the
 shell line editor. On Windows without a TTY, keys are read from the matplotlib window when
@@ -21,8 +23,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
+import mpl_toolkits.mplot3d  # noqa: F401  # registers 3d projection
+
 from physics_sim import BaseLinkPose, PhysicsSimEngine, Thruster
 from physics_sim.plotting import plot_base_link_pose
+from physics_sim.thrusters_3d import redraw_thrusters_in_base_frame
 
 
 POS_KEYS = ("q", "w", "e", "r", "t", "y", "u", "i")
@@ -293,6 +298,18 @@ def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         metavar="PATH",
         help="after closing the plot, save base_link pose vs time to this file (e.g. teleop_pose.png)",
     )
+    p.add_argument(
+        "--thruster-arrow-m",
+        type=float,
+        default=0.22,
+        help="length of thrust direction arrows in the 3D base-frame view (m)",
+    )
+    p.add_argument(
+        "--base-axes-m",
+        type=float,
+        default=0.12,
+        help="length of +x/+y/+z axis segments from base origin in the 3D view (m)",
+    )
     return p.parse_args(argv)
 
 
@@ -328,6 +345,10 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     _print_teleop_help(input_mode=input_mode)
 
     fig, (ax_p, ax_q) = plt.subplots(2, 1, sharex=True, figsize=(10, 7), constrained_layout=True)
+    try:
+        fig.canvas.manager.set_window_title("Teleop — base_link pose")
+    except Exception:
+        pass
     fig.suptitle("base_link pose (teleop keys in this terminal when raw mode is active)")
     (lx,) = ax_p.plot([], [], label="x (m)")
     (ly,) = ax_p.plot([], [], label="y (m)")
@@ -348,8 +369,21 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     if input_mode == "mpl":
         fig.canvas.mpl_connect("key_press_event", st.on_mpl_key)
 
+    fig_3d = plt.figure(figsize=(7, 6))
+    try:
+        fig_3d.canvas.manager.set_window_title("Teleop — thrusters (base frame)")
+    except Exception:
+        pass
+    ax_3d = fig_3d.add_subplot(111, projection="3d")
+
     st.engine.record_base_pose(0.0)
     st.append_sample()
+    redraw_thrusters_in_base_frame(
+        ax_3d,
+        st.engine,
+        arrow_length_m=args.thruster_arrow_m,
+        base_axes_length_m=args.base_axes_m,
+    )
 
     def _drain_keyboard_queue() -> None:
         while True:
@@ -382,12 +416,20 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
         ax_p.autoscale_view()
         ax_q.relim()
         ax_q.autoscale_view()
+        redraw_thrusters_in_base_frame(
+            ax_3d,
+            st.engine,
+            arrow_length_m=args.thruster_arrow_m,
+            base_axes_length_m=args.base_axes_m,
+        )
+        fig_3d.canvas.draw_idle()
         return (lx, ly, lz, lqx, lqy, lqz, lqw)
 
     def _on_figure_close(_evt) -> None:
         stop_reader.set()
 
     fig.canvas.mpl_connect("close_event", _on_figure_close)
+    fig_3d.canvas.mpl_connect("close_event", _on_figure_close)
 
     anim = FuncAnimation(
         fig,

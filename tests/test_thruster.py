@@ -28,11 +28,14 @@ def test_fire_impulse_updates_linear_velocity() -> None:
         left_thruster=Thruster(side="left", max_thrust_n=800.0, impulse_window_s=0.1),
     )
     assert np.allclose(engine.linear_velocity_world_m_s, 0.0)
+    assert np.allclose(engine.angular_velocity_body_rad_s, 0.0)
     J = engine.left_thruster.fire(engine, throttle=1.0)
     m = engine.satellite.mass_kg
     expected_delta_v = J / m
     assert np.allclose(engine.linear_velocity_world_m_s, expected_delta_v)
     assert np.isclose(np.linalg.norm(J), 800.0 * 0.1)
+    # Lever arm from CoM to EE produces body torque (default URDF pose).
+    assert np.linalg.norm(engine.angular_velocity_body_rad_s) > 1e-12
 
 
 def test_throttle_scales_impulse_magnitude() -> None:

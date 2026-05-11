@@ -16,7 +16,7 @@ The joints of each robot arm will simply teleport to their requested position (e
 
 ### Instantaneous Thrust
 
-Assuming zero-time linear impulses of the thruster end-effector rather than a more realistic change in momentum over time will help simplify the dynamics a lot when calculating the resulting linear and angular momentum transfer from a burn. 
+Thruster burns are modeled as short linear impulses along the thruster **+Y** axis through the URDF thruster frame origin. Each impulse updates linear momentum at the bus CoM and angular momentum about the CoM via **r × J** (lever arm **r** from the CoM to that point; **base_link** inertial origin is the CoM in the URDF). Between burns, orientation advances in the sim with body-frame angular velocity (no gravity).
 
 ### Satellite is not in Orbit
 
@@ -53,6 +53,10 @@ uv run --group dev pytest
 
 - **`tests/test_engine_step.py`** — Checks `PhysicsSimEngine.step`: `base_link` position advances by `v * dt` with fixed orientation.
 
+- **`tests/test_attitude.py`** — Quaternion integration with zero body rate stays at identity.
+
+- **`tests/test_thrusters_3d.py`** — Thruster origin and thrust axis in `base_link` frame from FK; `arm_link_frame_origins_base_m` shape `(5, 3)` for the arm skeleton.
+
 ### Optional CLI smoke test
 
 The kinematic demo script is not part of pytest, but you can run it after a sync:
@@ -69,7 +73,7 @@ Use `--save pose.png` to write the figure without opening a window.
 
 ## Teleop simulation
 
-Interactive teleop with a **live matplotlib plot** of `base_link` position (m) and quaternion (xyzw) vs time.
+Interactive teleop with **two live matplotlib windows** in parallel: (1) `base_link` position (m) and quaternion (xyzw) vs time, and (2) a **3D base_link-frame** view with **RGB XYZ axes** at the base origin, **line segments along each arm** through link 4 (frame origins after joints 1–4), both thruster origins, and their **+Y thrust** directions (updated every animation frame as joints move).
 
 **Where keys are read**
 
@@ -95,7 +99,7 @@ uv run dual-arm-satellite-teleop
 
 Joints are **clamped** to URDF limits. Thruster impulse magnitude is `throttle × max_thrust × dt`; use `--thruster-throttle` for 0–1 scaling.
 
-Useful flags: `--joint-step`, `--dt`, `--interval-ms`, `--left-max-thrust-n`, `--right-max-thrust-n`, `--max-plot-points` (rolling buffer).
+Useful flags: `--joint-step`, `--dt`, `--interval-ms`, `--left-max-thrust-n`, `--right-max-thrust-n`, `--max-plot-points` (rolling buffer), `--thruster-arrow-m` (thrust arrow length in the 3D view, meters), `--base-axes-m` (length of the red/green/blue +x/+y/+z segments from the base origin).
 
 After you close the plot window, save the recorded pose time series to a file:
 

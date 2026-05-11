@@ -7,10 +7,16 @@ from typing import Optional, Union
 
 import numpy as np
 
+from physics_sim.attitude import integrate_quaternion_semi_implicit
 from physics_sim.base_state import (
     BaseLinkPose,
     PoseTimeSeries,
     make_initial_joint_positions,
+)
+from physics_sim.fk_chain import rotation_body_to_world_from_quat_xyzw
+from physics_sim.inertia_utils import (
+    inertia_tensor_body_from_satellite,
+    invert_inertia_3x3,
 )
 from physics_sim.models import ParsedRobotDescription, RobotArmDefinition, SatelliteBodyParams
 from physics_sim.thruster import Thruster
@@ -23,9 +29,9 @@ class PhysicsSimEngine:
     """
     Owns satellite bus parameters and both arm definitions, typically built from the URDF.
 
-    Tracks an optional initial ``base_link`` pose and 8 joint angles for teleop / control.
-    Linear velocity of the bus CoM in world frame can be updated via impulses (see thrusters).
-    Use :meth:`record_base_pose` during integration to build data for :mod:`physics_sim.plotting`.
+    Tracks ``base_link`` pose, linear velocity (world), **angular velocity (body)**, and 8
+    joint angles. Thruster impulses apply **linear** momentum at the CoM and **angular**
+    impulse ``r × J`` about the CoM when applied at the end-effector (URDF thruster origin).
     """
 
     def __init__(
@@ -57,6 +63,10 @@ class PhysicsSimEngine:
             ).reshape(8)
 
         self._linear_velocity_world_m_s = np.zeros(3, dtype=float)
+        self._angular_velocity_body_rad_s = np.zeros(3, dtype=float)
+        I_body = inertia_tensor_body_from_satellite(satellite)
+        self._inertia_body_inv = invert_inertia_3x3(I_body)
+
         self.left_thruster = (
             left_thruster
             if left_thruster is not None
@@ -96,30 +106,66 @@ class PhysicsSimEngine:
     def set_linear_velocity_world_m_s(self, v: np.ndarray) -> None:
         self._linear_velocity_world_m_s = np.asarray(v, dtype=float).reshape(3).copy()
 
+    @property
+    def angular_velocity_body_rad_s(self) -> np.ndarray:
+        """Angular velocity of ``base_link`` expressed in the body frame (rad/s)."""
+        return self._angular_velocity_body_rad_s.copy()
+
+    def set_angular_velocity_body_rad_s(self, w: np.ndarray) -> None:
+        self._angular_velocity_body_rad_s = np.asarray(w, dtype=float).reshape(3).copy()
+
     def step(self, dt_s: float) -> None:
         """
-        Advance ``base_link`` translation by one step: ``p += v * dt`` (world frame).
+        Semi-implicit step: ``p += v dt``, quaternion from body-frame ``ω``.
 
-        Orientation is unchanged (no angular state in this MVP). ``dt_s`` must be non-negative.
+        ``dt_s`` must be non-negative.
         """
         dt = float(dt_s)
         if dt < 0.0:
             raise ValueError("dt_s must be non-negative")
         p = self._base_pose.position_m + self._linear_velocity_world_m_s * dt
-        q = self._base_pose.quaternion_xyzw.copy()
+        q = integrate_quaternion_semi_implicit(
+            self._base_pose.quaternion_xyzw,
+            self._angular_velocity_body_rad_s,
+            dt,
+        )
         self._base_pose = BaseLinkPose(p, q)
 
-    def apply_linear_impulse_world(self, impulse_n_s: np.ndarray) -> None:
+    def apply_impulse_world(
+        self,
+        impulse_world_n_s: np.ndarray,
+        *,
+        application_point_world_m: Optional[np.ndarray] = None,
+    ) -> None:
         """
-        Apply an instantaneous linear impulse at the satellite CoM (world frame, N·s).
+        Apply a linear impulse ``J`` (N·s) in world frame at the CoM for linear momentum.
 
-        ``Δv = J / m`` with :attr:`satellite.mass_kg`. No angular impulse (massless arms).
+        If ``application_point_world_m`` is set (world-frame point, m), also applies the
+        angular impulse ``ΔL = r × J`` with ``r`` from CoM to that point, updating body-frame
+        ``ω`` via ``Δω = I^{-1} (r_b × J_b)``.
         """
-        J = np.asarray(impulse_n_s, dtype=float).reshape(3)
+        J = np.asarray(impulse_world_n_s, dtype=float).reshape(3)
         m = self.satellite.mass_kg
         if m <= 0.0:
             raise ValueError("Satellite mass must be positive to apply impulse")
         self._linear_velocity_world_m_s = self._linear_velocity_world_m_s + J / m
+
+        if application_point_world_m is None:
+            return
+
+        p_com = self._base_pose.position_m.reshape(3)
+        R = rotation_body_to_world_from_quat_xyzw(self._base_pose.quaternion_xyzw)
+        p_app = np.asarray(application_point_world_m, dtype=float).reshape(3)
+        r_w = p_app - p_com
+        r_b = R.T @ r_w
+        J_b = R.T @ J
+        tau_b = np.cross(r_b, J_b)
+        domega = self._inertia_body_inv @ tau_b
+        self._angular_velocity_body_rad_s = self._angular_velocity_body_rad_s + domega
+
+    def apply_linear_impulse_world(self, impulse_n_s: np.ndarray) -> None:
+        """Apply impulse at the CoM only (no torque). Same as ``apply_impulse_world(J)``."""
+        self.apply_impulse_world(impulse_n_s, application_point_world_m=None)
 
     def reset(
         self,
@@ -142,6 +188,7 @@ class PhysicsSimEngine:
         if clear_pose_log:
             self.pose_log.clear()
         self._linear_velocity_world_m_s = np.zeros(3, dtype=float)
+        self._angular_velocity_body_rad_s = np.zeros(3, dtype=float)
 
     def record_base_pose(self, time_s: float) -> None:
         """Append the current ``base_link`` pose to :attr:`pose_log` at ``time_s`` seconds."""
