@@ -2,6 +2,19 @@
 
 A physics simulation and MVP control solution for a free-floating satellite with two 4 DoF robot arms using thruster end-effectors.
 
+## Setup
+
+It is recommended to use `uv` to manage python dependencies for this project. If you do not already have it installed, visit the [Astral UV site](https://docs.astral.sh/uv/getting-started/installation/) and run the installation command for your OS.
+
+After cloning the repository, run a `uv sync` in the root directory of the project
+
+```bash
+git clone git@github.com:evanpasko/dual_arm_satellite.git
+cd dual_arm_satellite
+uv sync
+source .venv/bin/activate
+```
+
 ## Simplifying Assumptions
 
 In order to achieve the solution in the requested time limit, the following simplifying assumptions were made to the model with brief justifications provided for each: 
