@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal, Optional
 
 import numpy as np
 
-from physics_sim.fk_chain import (
+from robot_description.fk import (
     arm_joint_slice,
     compute_thrust_axis_world,
     thruster_application_point_world_m,

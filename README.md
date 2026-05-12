@@ -1,19 +1,43 @@
 # Dual Arm Satellite Simulation
 
-A physics simulation and MVP control solution for a free-floating satellite with two 4 DoF robot arms using thruster end-effectors.
+A physics simulation and MVP control stack for a free-floating satellite whose only actuators are two 4-DoF robot arms, each tipped with a linear thruster. The project provides a rigid-body simulator, a URDF-driven robot description with forward / inverse kinematics, three runnable CLIs (a kinematic trajectory demo, an interactive keyboard teleop, and a closed-loop bang-bang position-control demo), and a pytest suite.
 
 ## Setup
 
 It is recommended to use `uv` to manage python dependencies for this project. If you do not already have it installed, visit the [Astral UV site](https://docs.astral.sh/uv/getting-started/installation/) and run the installation command for your OS.
 
-After cloning the repository, run a `uv sync` in the root directory of the project
+After cloning the repository, run a `uv sync` in the root directory of the project. Add `--group dev` if you also want to run the test suite.
 
 ```bash
 git clone git@github.com:evanpasko/dual_arm_satellite.git
 cd dual_arm_satellite
-uv sync
+uv sync                 # runtime only
+uv sync --group dev     # runtime + pytest
 source .venv/bin/activate
 ```
+
+## Project layout
+
+Sources live under `src/`, organized into four installable packages:
+
+- **`robot_description/`** — Static robot data, no simulation state.
+  - `urdf/dual_arm_satellite.urdf` — Bus + two 4-DoF arms with `+Y`-bore thrusters at link 4.
+  - `models.py`, `urdf_loading.py` — Parameter dataclasses and parser (`parse_robot_urdf`, `default_urdf_path`).
+  - `fk.py` — Forward-kinematics primitives (`T_base_thruster`, `T_world_thruster`, `compute_thrust_axis_world`, `arm_link_frame_origins_base_m`, …).
+  - `ik.py` — Per-arm damped-least-squares direction-only IK (`solve_arm_ik` → `IKResult`).
+- **`physics_sim/`** — Dynamic simulation state (depends on `robot_description` for static data only).
+  - `base_state.py`, `engine.py` — `BaseLinkPose`, `PoseTimeSeries`, `PhysicsSimEngine` (`from_urdf`, `step`, `apply_impulse_world`).
+  - `integrator.py`, `attitude.py` — Kinematic trajectory integration and semi-implicit quaternion update.
+  - `thruster.py` — `Thruster.fire(engine, throttle, impulse_window_s)`: linear impulse via FK + angular impulse `r × J` about the bus CoM.
+  - `plotting.py`, `thrusters_3d.py`, `inertia_utils.py` — Matplotlib helpers and bus inertia utilities.
+- **`controller/`** — Closed-loop pose controllers.
+  - `types.py` — `StateError`, `ControlCommand` value-types (immutable, shape-checked).
+  - `base.py` — `ControllerBaseClass` with `state_error`, `thruster_IK_simple` (delegates to `solve_arm_ik` per arm, returns the best-effort 8-vector), and an abstract `calculate_control`.
+  - `bang_bang.py` — `BangBangController`: position-deadband MVP that points both thrusters at the target and fires at full throttle outside the deadband.
+- **`dual_arm_satellite/`** — CLI entry points only.
+  - `physics_demo.py` → `dual-arm-satellite-sim`
+  - `teleop_live.py` → `dual-arm-satellite-teleop`
+  - `basic_control_sim.py` → `dual-arm-satellite-control`
 
 ## Simplifying Assumptions
 
@@ -75,7 +99,26 @@ After you close the plot window, save the recorded pose time series to a file:
 uv run dual-arm-satellite-teleop --save teleop_pose.png
 ```
 
+## Bang-bang position-control simulation
 
+Closed-loop demo where a `BangBangController` drives the bus toward a CLI-supplied world-frame target position. Shape mirrors the teleop sim — two live matplotlib windows (pose-vs-time with **dashed target lines**, plus a **fixed-cube 3D base-frame view** of the arms and thrust directions) — but the input each tick comes from the controller, not from the keyboard:
+
+1. `BangBangController.calculate_control(engine, target_pose)` produces a `ControlCommand` (8 joint targets + per-side throttle).
+2. Joints teleport to the commanded angles, then any commanded thruster fires for the current timestep.
+3. `engine.step(dt)` advances the base pose under the resulting impulse.
+
+The MVP is **position-only**: no velocity damping, so the bus reaches the target and then chatters around it in a bang-bang limit cycle — exactly the behaviour the simplification predicts.
+
+```bash
+# Default thrust (5 N per arm); close the window to quit.
+uv run dual-arm-satellite-control --target 0.5 0.0 0.0
+
+# Auto-stop after 10 s and save a pose plot, no interactive window.
+uv run dual-arm-satellite-control --target 0.5 0.0 0.0 \
+    --duration 10 --no-show --save bang_bang.png
+```
+
+Useful flags: `--target X Y Z` (required), `--max-thrust-n` (per-thruster peak force, N; default 5), `--dist-err-threshold-m` (position deadband; default 0.01 m), `--dt`, `--interval-ms`, `--duration` (auto-stop time; required with `--no-show`), `--view-half-m` (half-extent of the fixed 3D view cube, m; default 1.2), `--thruster-arrow-m`, `--base-axes-m`, `--max-plot-points`, `--save`, `--no-show`.
 
 ## Developer testing
 
@@ -107,6 +150,16 @@ uv run --group dev pytest
 - **`tests/test_attitude.py`** — Quaternion integration with zero body rate stays at identity.
 
 - **`tests/test_thrusters_3d.py`** — Thruster origin and thrust axis in `base_link` frame from FK; `arm_link_frame_origins_base_m` shape `(5, 3)` for the arm skeleton.
+
+- **`tests/test_ik.py`** — `robot_description.ik.solve_arm_ik` direction-only IK: convergence to seeded directions, handling of zero / near-singular targets, and joint-limit clamping behaviour.
+
+- **`tests/test_controller_types.py`** — `StateError` and `ControlCommand` value-types: array shape validation, immutability, `.hold()` / `.zero()` factories, `is_*_firing` flags, joint-slice properties.
+
+- **`tests/test_controller_base.py`** — `ControllerBaseClass.state_error` (position / rotation / velocity error correctness against known poses) and `thruster_IK_simple` (8-vector concatenation, both arms point along the requested body-frame direction).
+
+- **`tests/test_bang_bang.py`** — `BangBangController.calculate_control` behaviour: deadband produces a hold command, outside the deadband both thrusters fire at full throttle along the target direction, returned joint array has the correct shape.
+
+- **`tests/test_basic_control_sim.py`** — Headless smoke tests for `dual-arm-satellite-control`: the controller actually moves the bus toward the target, the `--save` path writes a plot file, and the `--no-show` CLI guard refuses to run without `--duration`.
 
 ### Optional CLI smoke test
 
