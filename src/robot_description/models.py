@@ -1,4 +1,4 @@
-"""Core parameter objects for the physics engine, populated from the URDF."""
+"""Parameter objects describing the robot (populated from the URDF)."""
 
 from __future__ import annotations
 

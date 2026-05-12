@@ -13,14 +13,18 @@ from physics_sim.base_state import (
     PoseTimeSeries,
     make_initial_joint_positions,
 )
-from physics_sim.fk_chain import rotation_body_to_world_from_quat_xyzw
+from robot_description.fk import rotation_body_to_world_from_quat_xyzw
 from physics_sim.inertia_utils import (
     inertia_tensor_body_from_satellite,
     invert_inertia_3x3,
 )
-from physics_sim.models import ParsedRobotDescription, RobotArmDefinition, SatelliteBodyParams
 from physics_sim.thruster import Thruster
-from physics_sim.urdf_loading import default_urdf_path, parse_robot_urdf
+from robot_description.models import (
+    ParsedRobotDescription,
+    RobotArmDefinition,
+    SatelliteBodyParams,
+)
+from robot_description.urdf_loading import default_urdf_path, parse_robot_urdf
 
 UrdfPath = Union[str, Path]
 

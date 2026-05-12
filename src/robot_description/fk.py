@@ -8,7 +8,7 @@ from typing import Literal, Optional
 import numpy as np
 
 from physics_sim.base_state import BaseLinkPose
-from physics_sim.models import FixedJointParams, RevoluteJointParams, RobotArmDefinition
+from robot_description.models import FixedJointParams, RevoluteJointParams, RobotArmDefinition
 
 
 def _skew(v: np.ndarray) -> np.ndarray:
@@ -25,7 +25,7 @@ def _rodrigues(axis_unit: np.ndarray, angle_rad: float) -> np.ndarray:
 
 
 def _rpy_to_R(rpy: np.ndarray) -> np.ndarray:
-    """URDF / ROS fixed-axis roll–pitch–yaw: ``R = Rz(yaw) @ Ry(pitch) @ Rx(roll)``."""
+    """URDF / ROS fixed-axis roll-pitch-yaw: ``R = Rz(yaw) @ Ry(pitch) @ Rx(roll)``."""
     roll, pitch, yaw = [float(x) for x in np.asarray(rpy, dtype=float).reshape(3)]
     cr, sr = math.cos(roll), math.sin(roll)
     cp, sp = math.cos(pitch), math.sin(pitch)
@@ -44,7 +44,7 @@ def _homogeneous_from_xyz_rpy(xyz: np.ndarray, rpy: np.ndarray) -> np.ndarray:
 
 
 def _revolute_transform(j: RevoluteJointParams, q_rad: float) -> np.ndarray:
-    """Parent link → child link transform for angle ``q_rad``."""
+    """Parent link to child link transform for angle ``q_rad``."""
     T0 = _homogeneous_from_xyz_rpy(
         np.array(j.origin_xyz_m), np.array(j.origin_rpy_rad)
     )
@@ -62,7 +62,7 @@ def _fixed_transform(f: FixedJointParams) -> np.ndarray:
 
 
 def _quat_xyzw_to_R(q: np.ndarray) -> np.ndarray:
-    """Unit quaternion (x,y,z,w): rotation body → world, ``v_w = R @ v_b``."""
+    """Unit quaternion (x,y,z,w): rotation body to world, ``v_w = R @ v_b``."""
     x, y, z, w = [float(v) for v in np.asarray(q, dtype=float).reshape(4)]
     return np.array(
         [
@@ -80,7 +80,7 @@ def rotation_body_to_world_from_quat_xyzw(q_xyzw: np.ndarray) -> np.ndarray:
 
 
 def T_world_base(pose: BaseLinkPose) -> np.ndarray:
-    """World ← base_link: ``p_world = T @ p_base`` (homogeneous 4×4)."""
+    """World <- base_link: ``p_world = T @ p_base`` (homogeneous 4x4)."""
     T = np.eye(4, dtype=float)
     T[:3, :3] = _quat_xyzw_to_R(pose.quaternion_xyzw)
     T[:3, 3] = pose.position_m.reshape(3)
@@ -88,7 +88,7 @@ def T_world_base(pose: BaseLinkPose) -> np.ndarray:
 
 
 def T_base_thruster(arm: RobotArmDefinition, joint_positions_rad: np.ndarray) -> np.ndarray:
-    """base_link ← thruster frame: ``p_base = T @ p_thruster``."""
+    """base_link <- thruster frame: ``p_base = T @ p_thruster``."""
     q = np.asarray(joint_positions_rad, dtype=float).reshape(4)
     T = np.eye(4, dtype=float)
     for j, qi in zip(arm.joints, q):
@@ -103,8 +103,8 @@ def arm_link_frame_origins_base_m(
     """
     ``base_link``-frame positions of the kinematic chain through **link4**.
 
-    Returns shape ``(5, 3)``: row 0 is the base origin, rows 1–4 are the child link frame
-    origins after joints 1–4 (URDF cumulative transforms).
+    Returns shape ``(5, 3)``: row 0 is the base origin, rows 1-4 are the child link frame
+    origins after joints 1-4 (URDF cumulative transforms).
     """
     q = np.asarray(joint_positions_rad, dtype=float).reshape(4)
     pts: list[np.ndarray] = [np.zeros(3, dtype=float)]
@@ -118,7 +118,7 @@ def arm_link_frame_origins_base_m(
 def T_world_thruster(
     pose: BaseLinkPose, arm: RobotArmDefinition, joint_positions_rad: np.ndarray
 ) -> np.ndarray:
-    """World ← thruster: ``p_world = T @ p_thruster``."""
+    """World <- thruster: ``p_world = T @ p_thruster``."""
     return T_world_base(pose) @ T_base_thruster(arm, joint_positions_rad)
 
 

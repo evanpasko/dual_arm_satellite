@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from physics_sim.models import Inertia, SatelliteBodyParams
+from robot_description.models import Inertia, SatelliteBodyParams
 
 
 def inertia_tensor_body_kg_m2(I: Inertia) -> np.ndarray:
