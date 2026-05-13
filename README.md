@@ -59,10 +59,6 @@ Thruster burns are modeled as short linear impulses along the thruster **+Y** ax
 
 Per the problem description (pdf in base directory) the satellite is in 0 gravity so there is no orbital mechanics to include in the physics engine
 
-### No Nearby Bodies
-
-Also assume no nearby small bodies that could induce microgravity
-
 ## Teleop simulation
 
 Interactive teleop with **two live matplotlib windows** in parallel: (1) `base_link` position (m) and quaternion (xyzw) vs time, and (2) a **3D base_link-frame** view with **RGB XYZ axes** at the base origin, **line segments along each arm** through link 4 (frame origins after joints 1–4), both thruster origins, and their **+Y thrust** directions (updated every animation frame as joints move).
